@@ -2,3 +2,5 @@ did.json
 payload.json
 private.jwk
 public.jwk
+__pycache__
+.idea/

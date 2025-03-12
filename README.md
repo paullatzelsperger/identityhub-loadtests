@@ -20,6 +20,7 @@ The following tools are **mandatory** and must be installed beforehand:
 - `curl` to make HTTP requests
 - `jq` to parse JSON
 - [jose](https://github.com/nao1215/jose), to create JWT and JWS objects. Note that we are _not_ using the JWK generation facility of it.
+- python 3 and pip (`python3 -m ensurepip --upgrade` to install `pip`)
 - a running instance of IdentityHub with a pre-configured `"super-user"` admin role.
 
 ## Preparation: create keys and user accounts
@@ -137,6 +138,31 @@ curl -sL 'http://localhost:7081/api/credentials/v1/participants/ZGlkOndlYjpsb2Nh
     ]
 }' | jq
 ```
+
+## Run stress tests
+
+Several tools exist, for example `ab` (Apache Benchmark), `wrk` and `locust` and for the purposes of this document we'll focus on `locust` (<https://locust.io>) because it appears to be the most versatile and even comes with a dashboard.
+
+To install, simply run `pip install locust`. On some machines, installing this in the global python environment is disallowed. In those cases a virtual environment (venv) must be created:
+
+```shell
+python3 -m venv perftest
+source perftest/bin/activate # for unix/macos
+```
+
+There is a preconfigured locust file (`locustfile.py`) which assumes to find the ID token in an environment variable `ID_TOKEN`. Thus, we are going to export our shell variable `idToken` from earlier:
+
+```shell
+export ID_TOKEN=$idToken
+```
+
+and then we can run
+
+```shell
+locust -f locustfile.py --host http://localhost:7081/api/credentials/v1/participants/ZGlkOndlYjpsb2NhbGhvc3QlM0E3MDgz
+```
+
+notice that the `--host` argument specifies the base URL, the API endpoint (`/api/presentation`) is specified inside the locust file. On locust's dashboard (by default at `http://0.0.0.0:8089`) we can configure things like overall runtime, peak users and ramp-up.
 
 ## Caveats and noteworthy things
 
