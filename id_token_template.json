@@ -1,0 +1,8 @@
+{
+    "aud": "did:web:localhost%3A7083",
+    "sub": "did:web:localhost%3A7083",
+    "iss": "did:web:localhost%3A9876",
+    "exp": 1741696799,
+    "jti": "c54ea3ac-b840-41d0-a4f0-4d07b1338a80",
+    "client_id": "did:web:localhost%3A9876"
+}
