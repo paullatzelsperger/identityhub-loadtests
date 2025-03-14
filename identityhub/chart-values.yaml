@@ -1,0 +1,10 @@
+edc:
+  vault:
+    hashicorp:
+      token: "root"
+      url: "http://localhost:8200"
+
+identityhub:
+  image:
+    tag: "latest"
+    repository: "identityhub"

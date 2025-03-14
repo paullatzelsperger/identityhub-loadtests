@@ -23,7 +23,6 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.stream.Stream;
 
@@ -38,48 +37,38 @@ public class IdentityHubExtension implements ServiceExtension {
 
     @Inject
     private TypeManager typeManager;
-    private String credentialsDir;
     private Monitor monitor;
 
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        credentialsDir = context.getConfig().getString("edc.mvd.credentials.path");
         monitor = context.getMonitor().withPrefix("DEMO");
     }
 
     @Override
     public void start() {
         try {
-            seedCredentials(credentialsDir, monitor);
+            seedCredentials(monitor);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void seedCredentials(String credentialsSourceDirectory, Monitor monitor) throws IOException {
+    private void seedCredentials(Monitor monitor) throws IOException {
 
-        var absPath = new File(credentialsSourceDirectory).getAbsoluteFile();
+        var mapper = typeManager.getMapper(JSON_LD);
 
-        if (!absPath.exists()) {
-            monitor.warning("Path '%s' does not exist. It must be a resolvable path with read access. Will not add any VCs.".formatted(credentialsSourceDirectory));
-            return;
-        }
-        var files = absPath.listFiles();
-        if (files == null) {
-            monitor.warning("No files found in directory '%s'. Will not add any VCs.".formatted(credentialsSourceDirectory));
-            return;
-        }
+        Stream.of("dataprocessor-credential.json", "membership-credential.json")
+                .forEach(resourceName -> {
 
-        var objectMapper = typeManager.getMapper(JSON_LD);
-        // filtering for *.json files is advised, because on K8s there can be softlinks, if a directory is mapped via ConfigMap
-        Stream.of(files).filter(f -> f.getName().endsWith(".json")).forEach(p -> {
-            try {
-                store.create(objectMapper.readValue(p, VerifiableCredentialResource.class));
-                monitor.debug("Stored VC from file '%s'".formatted(p.getAbsolutePath()));
-            } catch (IOException e) {
-                monitor.severe("Error storing VC", e);
-            }
-        });
+                    try (var is = getClass().getClassLoader().getResourceAsStream(resourceName)) {
+                        var credential = mapper.readValue(is, VerifiableCredentialResource.class);
+                        store.create(credential);
+                        monitor.info("Stored VC from resource '%s'".formatted(resourceName));
+
+                    } catch (IOException e) {
+                        monitor.severe("Error storing VC", e);
+                    }
+                });
     }
 }
